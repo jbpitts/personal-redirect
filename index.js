@@ -3,15 +3,14 @@ const https = require('https');
 const url = require('url');
 const fs = require('fs');
 const path = require('path');
-const port = 8080;
-
-
+const port = 80;
+const wsPort = 8080;
 
 let target;
 
 const WebSocket = require('ws');
 
-const wss = new WebSocket.Server({ port: 8090 });
+const wss = new WebSocket.Server({ port: wsPort });
 
 let wsMessage;
 
