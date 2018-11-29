@@ -154,7 +154,11 @@ const serverHandler = (request, response) => {
             }).on('end', () => {
                 console.log('body', body);
                 body = Buffer.concat(body);
-                wsMessage.send(JSON.stringify({id, headers, method, url, body: body.toString('base64')}));
+                wsMessage.send(JSON.stringify({id, headers, method, url, body: body.toString('base64')}), (ack) => {
+                    if (ack) {
+                        console.log('Ack Error: ', ack);
+                    }
+                });
             });
 
             // proxy.web(request, response, { target: target, changeOrigin: true });
