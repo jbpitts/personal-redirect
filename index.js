@@ -5,20 +5,11 @@ const fs = require('fs');
 const path = require('path');
 const port = 80;
 const wsPort = 8080;
+const WebSocket = require('ws');
 
 let target;
 
-const WebSocket = require('ws');
-
-const wss = new WebSocket.Server({ port: wsPort });
-
 let wsMessage;
-
-wss.on('connection', function connection(ws) {
-    wsMessage = ws;
-    console.log('Client Connected');
-});
-
 let lastId = 0;
 
 const mimeType = {
@@ -37,6 +28,51 @@ const mimeType = {
     '.eot': 'appliaction/vnd.ms-fontobject',
     '.ttf': 'aplication/font-sfnt'
 };
+
+const domain = 'james.testquality.com';
+
+fs.exists('/etc/letsencrypt/live/' + domain + '/privkey.pem', (exist) => {
+    if (exist) {
+        const privateKey = fs.readFileSync('/etc/letsencrypt/live/' + domain + '/privkey.pem', 'utf8');
+        const certificate = fs.readFileSync('/etc/letsencrypt/live/' + domain + '/cert.pem', 'utf8');
+        const ca = fs.readFileSync('/etc/letsencrypt/live/' + domain + '/chain.pem', 'utf8');
+
+        const credentials = {
+            key: privateKey,
+            cert: certificate,
+            ca: ca
+        };
+        const httpsServer = https.createServer(credentials, serverHandler).listen(443, () => {
+            console.log('listening port 443');
+        });
+
+        const wssHttpsServer = https.createServer(credentials);
+
+        const wss = new WebSocket.Server({ server: wssHttpsServer }, () => {
+            console.log('ws started on port ' + wsPort);
+        });
+
+        wss.on('connection', function connection(ws) {
+            wsMessage = ws;
+            console.log('Client Connected');
+        });
+
+        wssHttpsServer.listen(wsPort, () => {
+            console.log('wss listening on ' + wsPort);
+        });
+    } else {
+        const wss = new WebSocket.Server({ port: wsPort }, () => {
+            console.log('ws started on port ' + wsPort);
+        });
+
+        wss.on('connection', function connection(ws) {
+            wsMessage = ws;
+            console.log('Client Connected');
+        });
+    }
+});
+
+
 
 const serverHandler = (request, response) => {
     if (request.url && request.url.startsWith('/.well-known')) {
@@ -133,22 +169,7 @@ const server = http.createServer(serverHandler).listen(port, () => {
     console.log('listening on port: ' + port);
 });
 
-fs.exists('/etc/letsencrypt/live/yourdomain.com/privkey.pem', (exist) => {
-    if (exist) {
-        const privateKey = fs.readFileSync('/etc/letsencrypt/live/yourdomain.com/privkey.pem', 'utf8');
-        const certificate = fs.readFileSync('/etc/letsencrypt/live/yourdomain.com/cert.pem', 'utf8');
-        const ca = fs.readFileSync('/etc/letsencrypt/live/yourdomain.com/chain.pem', 'utf8');
 
-        const credentials = {
-            key: privateKey,
-            cert: certificate,
-            ca: ca
-        };
-        const httpsServer = https.createServer(credentials, serverHandler).listen(443, () => {
-            console.log('listening port 443');
-        });
-    }
-});
 
 
 
